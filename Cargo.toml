@@ -1,0 +1,7 @@
+[workspace]
+resolver = "2"
+members = [
+    "kodama-api",
+    "kodama-server",
+    "kodama-cli",
+]
