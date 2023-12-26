@@ -1,11 +1,15 @@
-use crate::{error::ApiError, Result};
-use kodama_api::{
-    metric::Timestamp,
-    project::ListProject,
-    record::{DataEntry, ListRecord},
-    service::ListService,
-};
+use kodama_api::Timestamp;
+use project::ListProject;
+use record::{DataEntry, ListRecord};
+use service::ListService;
 use std::{cell::RefCell, collections::HashMap, path::PathBuf, rc::Rc};
+
+mod error;
+pub use error::*;
+pub mod metric;
+pub mod project;
+pub mod record;
+pub mod service;
 
 struct Service {
     id: i64,
@@ -230,7 +234,9 @@ impl Kodama {
             WHERE p.project_name = ?1 AND s.service_name = ?2",
         )?;
         let mut rows = stmt.query(rusqlite::params![project_name, service_name])?;
-        let row = rows.next()?.ok_or(ApiError::ServiceNotFound(service_name.to_string()))?;
+        let row = rows
+            .next()?
+            .ok_or(ApiError::ServiceNotFound(service_name.to_string()))?;
         let service_id = row.get(0)?;
         Ok(service_id)
     }
@@ -243,10 +249,10 @@ impl Kodama {
             let service = Rc::new(RefCell::new(service));
             self.services_by_ps.insert(key.clone(), service.clone());
             self.services_by_id.insert(service_id, service.clone());
-            return Ok(service);
+            Ok(service)
         } else {
             let service = self.services_by_ps.get(&key).unwrap();
-            return Ok(service.clone());
+            Ok(service.clone())
         }
     }
 
@@ -266,14 +272,14 @@ impl Kodama {
         let row = rows.next()?;
         if let Some(row) = row {
             let record_id = row.get(0)?;
-            return Ok((service, record_id));
+            Ok((service, record_id))
         } else {
             let mut stmt = self
                 .db
                 .prepare("INSERT INTO records (service_id, record_name) VALUES (?1, ?2)")?;
             let record_id = stmt.insert(rusqlite::params![service_id, record_name])?;
             service.borrow_mut().define_record(record_id)?;
-            return Ok((service, record_id));
+            Ok((service, record_id))
         }
     }
 

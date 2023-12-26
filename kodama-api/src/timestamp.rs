@@ -1,33 +1,6 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use rusqlite::{
-    types::{FromSql, FromSqlResult, ValueRef},
-    ToSql,
-};
-
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub struct PushRequest {
-    pub project_name: String,
-    pub service_name: String,
-    pub metric_name: String,
-    pub metric_value: f64,
-    pub metric_timestamp: Option<String>,
-}
-
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub struct PushResponse {
-    pub metric_id: i64,
-}
-
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub struct Metric {
-    pub project_name: String,
-    pub service_name: String,
-    pub metric_name: String,
-
-    pub metric_timestamp: Option<Timestamp>,
-    pub metric_value: f64,
-}
+use rusqlite::{ToSql, types::{FromSql, ValueRef, FromSqlResult}};
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Timestamp {

@@ -1,11 +1,14 @@
 use std::net::SocketAddr;
 
 use clap::Parser;
+use kodama_internal::Kodama;
 
 #[derive(Parser)]
 struct Cli {
     #[clap(subcommand)]
     subcommand: SubCommand,
+    #[clap(long)]
+    database_path: Option<String>,
 }
 
 #[derive(Parser)]
@@ -15,25 +18,16 @@ enum SubCommand {
         #[clap(subcommand)]
         subcommand: ProjectSubCommand,
     },
-
     #[clap(name = "service")]
     Service {
         #[clap(subcommand)]
         subcommand: ServiceSubCommand,
     },
-
     #[clap(name = "metric")]
     Metric {
         #[clap(subcommand)]
         subcommand: MetricSubCommand,
     },
-
-    #[clap(name = "sqltrace")]
-    SqlTrace {
-        #[clap(subcommand)]
-        subcommand: SqlTraceSubCommand,
-    },
-
     #[clap(name = "record")]
     Record {
         #[clap(subcommand)]
@@ -84,40 +78,6 @@ enum RecordSubCommand {
     },
 }
 
-/*
-CREATE TABLE IF NOT EXISTS sql_traces (
-    trace_id INTEGER PRIMARY KEY,
-    service_id INTEGER NOT NULL,
-    -- 0 = SELECT
-    -- 1 = INSERT
-    -- 2 = UPDATE
-    -- 3 = DELETE
-    -- 4 = CREATE
-    -- 5 = ALTER
-    -- 6 = DROP
-    -- 7 = TRUNCATE
-    -- 8 = COMMENT
-    -- 9 = SET
-    command_type INTEGER NOT NULL,
-    query TEXT NOT NULL,
-    expended_query TEXT NOT NULL,
-    -- microseconds
-    execution_time INTEGER NOT NULL,
-    row_changes INTEGER NOT NULL,
-    last_row_id INTEGER NOT NULL,
-    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (service_id) REFERENCES services(service_id)
-);
-*/
-
-#[derive(Parser)]
-enum SqlTraceSubCommand {
-    /// List all sql traces (grouped by query) with p50, p95, and p99 execution times
-    /// in order of p99 execution time.
-    #[clap(name = "list")]
-    List { project: String, service: String },
-}
-
 #[tokio::main]
 async fn main() {
     tracing_subscriber::fmt::fmt()
@@ -130,54 +90,43 @@ async fn main() {
     tracing::debug!("kodama-cli v{}", env!("CARGO_PKG_VERSION"));
 
     let args = Cli::parse();
+    let database_path = args
+        .database_path
+        .unwrap_or_else(|| std::env::var("KODAMA_DATABASE_PATH").expect("KODAMA_DATABASE_PATH"));
+
+    let instance = Kodama::instance(database_path.clone()).expect("kodama instance");
+
     match args.subcommand {
-        SubCommand::Project { subcommand } => project(subcommand).await,
-        SubCommand::Service { subcommand } => service(subcommand).await,
-        SubCommand::Metric { subcommand } => matric(subcommand).await,
-        SubCommand::SqlTrace { subcommand } => sqltrace(subcommand).await,
-        SubCommand::Record { subcommand } => record(subcommand).await,
+        SubCommand::Project { subcommand } => project(instance, subcommand).await,
+        SubCommand::Service { subcommand } => service(instance, subcommand).await,
+        SubCommand::Metric { subcommand } => matric(instance, subcommand).await,
+        SubCommand::Record { subcommand } => record(instance, subcommand).await,
     }
 }
 
-async fn project(subcommand: ProjectSubCommand) {
+async fn project(kodama: Kodama, subcommand: ProjectSubCommand) {
     match subcommand {
         ProjectSubCommand::Create { name, description } => {
             tracing::debug!("creating project: {:?}", name);
-
-            let uri = "http://localhost:49001".parse().expect("uri");
-            match kodama_api::AdminClient::from_uri(uri)
+            kodama
                 .create_project(&name, &description)
-                .await
-            {
-                Ok(_) => {
-                    tracing::debug!("  project created");
-                }
-                Err(err) => {
-                    tracing::error!("error: {:?}", err);
-                }
-            }
+                .expect("create project");
         }
         ProjectSubCommand::List => {
             tracing::debug!("listing projects");
+            let projects = kodama.project_list().expect("project list");
 
-            let uri = "http://localhost:49001".parse().expect("uri");
-            match kodama_api::AdminClient::from_uri(uri).project_list().await {
-                Ok(response) => {
-                    println!("projects:");
-                    println!("{: >10} {: <80}", "[id]", "[name]");
-                    for project in &response.projects {
-                        println!("{: >10} {: <80}", project.id, project.name);
-                    }
-                }
-                Err(err) => {
-                    tracing::error!("error: {:?}", err);
-                }
+            println!();
+            println!("projects:");
+            println!("{: >10} {: <80}", "[id]", "[name]");
+            for project in &projects {
+                println!("{: >10} {: <80}", project.id, project.name);
             }
         }
     }
 }
 
-async fn service(subcommand: ServiceSubCommand) {
+async fn service(kodama: Kodama, subcommand: ServiceSubCommand) {
     match subcommand {
         ServiceSubCommand::Create {
             project,
@@ -185,44 +134,25 @@ async fn service(subcommand: ServiceSubCommand) {
             description,
         } => {
             tracing::debug!("creating service: {:?}", name);
-
-            let uri = "http://localhost:49001".parse().expect("uri");
-            match kodama_api::AdminClient::from_uri(uri)
+            kodama
                 .create_service(&project, &name, &description)
-                .await
-            {
-                Ok(_) => {
-                    tracing::debug!("  service created");
-                }
-                Err(err) => {
-                    tracing::error!("error: {:?}", err);
-                }
-            }
+                .expect("create service");
         }
         ServiceSubCommand::List { project } => {
             tracing::debug!("listing services");
 
-            let uri = "http://localhost:49001".parse().expect("uri");
-            match kodama_api::AdminClient::from_uri(uri)
-                .service_list(&project)
-                .await
-            {
-                Ok(response) => {
-                    println!("services:");
-                    println!("{: >10} {: <80}", "[id]", "[name]");
-                    for service in &response.services {
-                        println!("{: >10} {: <80}", service.id, service.name);
-                    }
-                }
-                Err(err) => {
-                    tracing::error!("error: {:?}", err);
-                }
+            let services = kodama.service_list(&project).expect("service list");
+            println!();
+            println!("services:");
+            println!("{: >10} {: <80}", "[id]", "[name]");
+            for service in &services {
+                println!("{: >10} {: <80}", service.id, service.name);
             }
         }
     }
 }
 
-async fn matric(subcommand: MetricSubCommand) {
+async fn matric(_kodama: Kodama, subcommand: MetricSubCommand) {
     match subcommand {
         MetricSubCommand::Push {
             project,
@@ -233,8 +163,8 @@ async fn matric(subcommand: MetricSubCommand) {
             tracing::debug!("pushing metric: {:?}", metric);
 
             let instance = kodama_api::Client::from_socketaddr(
-                &project,
-                &service,
+                project,
+                service,
                 SocketAddr::from(([127, 0, 0, 1], 49001)),
             );
 
@@ -243,62 +173,15 @@ async fn matric(subcommand: MetricSubCommand) {
     }
 }
 
-async fn sqltrace(subcommand: SqlTraceSubCommand) {
-    match subcommand {
-        SqlTraceSubCommand::List { project, service } => {
-            tracing::debug!("listing sql traces");
-
-            let uri = "http://localhost:49001".parse().expect("uri");
-            match kodama_api::AdminClient::from_uri(uri)
-                .status_sqltrace(&project, &service)
-                .await
-            {
-                Ok(response) => {
-                    println!("");
-                    println!(
-                        "{: >10} {: >10} {: >10} {: >10} {: >10} {: <80}",
-                        "[avg]", "[p50]", "[p95]", "[p99]", "[count]", "[query]"
-                    );
-                    let mut queries = response.queries;
-                    queries.sort_by(|a, b| b.p99.cmp(&a.p99));
-                    for trace in &queries {
-                        let query = if trace.query.len() > 80 - 3 {
-                            format!("{}...", &trace.query[..(80 - 3)])
-                        } else {
-                            trace.query.clone()
-                        };
-                        println!(
-                            "{: >10} {: >10} {: >10} {: >10} {: >10} {: <80}",
-                            trace.avg, trace.p50, trace.p95, trace.p99, trace.count, query
-                        );
-                    }
-                }
-                Err(err) => {
-                    tracing::error!("error: {:?}", err);
-                }
-            }
-        }
-    }
-}
-
-async fn record(subcommand: RecordSubCommand) {
+async fn record(mut kodama: Kodama, subcommand: RecordSubCommand) {
     match subcommand {
         RecordSubCommand::List { project, service } => {
-            let uri = "http://localhost:49001".parse().expect("uri");
-            match kodama_api::AdminClient::from_uri(uri)
-                .record_list(&project, &service)
-                .await
-            {
-                Ok(response) => {
-                    println!("");
-                    println!("{: >10} {: <80}", "[id]", "[name]");
-                    for record in &response.records {
-                        println!("{: >10} {: <80}", record.id, record.name);
-                    }
-                }
-                Err(err) => {
-                    tracing::error!("error: {:?}", err);
-                }
+            let records = kodama.record_list(&project, &service).expect("record list");
+
+            println!();
+            println!("{: >10} {: <80}", "[id]", "[name]");
+            for record in &records {
+                println!("{: >10} {: <80}", record.id, record.name);
             }
         }
         RecordSubCommand::Data {
@@ -306,39 +189,31 @@ async fn record(subcommand: RecordSubCommand) {
             service,
             record,
         } => {
-            let uri = "http://localhost:49001".parse().expect("uri");
-            match kodama_api::AdminClient::from_uri(uri)
+            let mut queries = kodama
                 .record_entries(&project, &service, &record)
-                .await
-            {
-                Ok(response) => {
-                    println!("");
-                    println!(
-                        "{: >10} {: >10} {: >10} {: >10} {: >10} {: <80}",
-                        "[total]", "[avg]", "[p50]", "[p95]", "[count]", "[query]"
-                    );
-                    let mut queries = response.entries;
-                    queries.sort_by(|a, b| b.p95.cmp(&a.p95));
-                    for trace in &queries {
-                        let query = if trace.group_by.len() > 80 - 3 {
-                            format!("{}...", &trace.group_by[..(80 - 3)])
-                        } else {
-                            trace.group_by.clone()
-                        };
-                        println!(
-                            "{: >10} {: >10} {: >10} {: >10} {: >10} {: <80}",
-                            us_to_human(trace.execution_time),
-                            us_to_human(trace.avg),
-                            us_to_human(trace.p50),
-                            us_to_human(trace.p95),
-                            trace.count,
-                            query
-                        );
-                    }
-                }
-                Err(err) => {
-                    tracing::error!("error: {:?}", err);
-                }
+                .expect("record entries");
+
+            println!();
+            println!(
+                "{: >10} {: >10} {: >10} {: >10} {: >10} {: <80}",
+                "[total]", "[avg]", "[p50]", "[p95]", "[count]", "[query]"
+            );
+            queries.sort_by(|a, b| b.p95.cmp(&a.p95));
+            for trace in &queries {
+                let query = if trace.group_by.len() > 80 - 3 {
+                    format!("{}...", &trace.group_by[..(80 - 3)])
+                } else {
+                    trace.group_by.clone()
+                };
+                println!(
+                    "{: >10} {: >10} {: >10} {: >10} {: >10} {: <80}",
+                    us_to_human(trace.execution_time),
+                    us_to_human(trace.avg),
+                    us_to_human(trace.p50),
+                    us_to_human(trace.p95),
+                    trace.count,
+                    query
+                );
             }
         }
     }

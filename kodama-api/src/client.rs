@@ -1,7 +1,4 @@
-use crate::{
-    metric::{Metric, Timestamp},
-    Command,
-};
+use crate::{Command, Timestamp, Metric};
 use std::net::SocketAddr;
 
 pub struct Client {

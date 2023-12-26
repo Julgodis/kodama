@@ -4,4 +4,5 @@ members = [
     "kodama-api",
     "kodama-server",
     "kodama-cli",
+    "kodama-internal",
 ]

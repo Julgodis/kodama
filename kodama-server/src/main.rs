@@ -1,13 +1,8 @@
-use crate::kodama::Kodama;
-use axum::routing::{post, put};
 use kodama_api::Command;
+use kodama_internal::Kodama;
 use std::{net::SocketAddr, thread};
 
 mod error;
-mod kodama;
-mod project;
-mod record;
-mod service;
 
 pub type Result<T> = std::result::Result<T, Error>;
 pub use error::Error;
@@ -37,7 +32,6 @@ async fn main() -> Result<()> {
             tracing::error!("error: {:?}", err);
         }
     });
-    start_admin_server(database_path).await?;
 
     Ok(())
 }
@@ -87,24 +81,4 @@ fn start_data_server(database_path: String) -> Result<()> {
             }
         }
     }
-}
-
-async fn start_admin_server(database_path: String) -> Result<()> {
-    let app = axum::Router::new()
-        .route("/project", put(project::create::handler))
-        .route("/projects", post(project::list::handler))
-        .route("/service", put(service::create::handler))
-        .route("/services", post(service::list::handler))
-        .route("/records", post(record::list::handler))
-        .route("/record", post(record::data::handler))
-        .with_state(database_path);
-
-    let addr = SocketAddr::from(([127, 0, 0, 1], 49001));
-    tracing::debug!("- initializing admin server ({})", addr);
-    axum::Server::bind(&addr)
-        .serve(app.into_make_service())
-        .await
-        .expect("server failed");
-
-    Ok(())
 }

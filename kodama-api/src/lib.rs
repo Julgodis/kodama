@@ -1,19 +1,14 @@
-pub mod metric;
-pub mod project;
-pub mod query;
-pub mod record;
-pub mod service;
-pub mod sql_trace;
-
 mod database;
 mod database_connection;
 mod database_query;
 mod from_row;
+mod query;
+mod timestamp;
 pub use database::*;
 pub use database_connection::*;
 pub use database_query::*;
 pub use from_row::*;
-use metric::Timestamp;
+pub use timestamp::*;
 
 #[derive(Debug)]
 pub enum Error {
@@ -62,13 +57,16 @@ pub struct Record {
     pub error: i64, // if >0 then error
 }
 
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct Metric {
+    pub project_name: String,
+    pub service_name: String,
+    pub metric_name: String,
+
+    pub metric_timestamp: Option<Timestamp>,
+    pub metric_value: f64,
+}
+
 mod client;
 pub use client::*;
-
 pub use rusqlite::params;
-
-#[cfg(feature = "admin")]
-mod admin_client;
-#[cfg(feature = "admin")]
-pub use admin_client::*;
-use metric::Metric;

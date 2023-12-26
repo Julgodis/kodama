@@ -550,11 +550,9 @@ name = "kodama-api"
 version = "0.1.0"
 dependencies = [
  "chrono",
- "hyper",
  "rusqlite",
  "serde",
  "serde_json",
- "tokio",
  "tracing",
 ]
 
@@ -565,19 +563,38 @@ dependencies = [
  "chrono",
  "clap",
  "kodama-api",
+ "kodama-internal",
  "tokio",
  "tracing",
  "tracing-subscriber",
 ]
 
 [[package]]
-name = "kodama-server"
+name = "kodama-internal"
 version = "0.1.0"
 dependencies = [
  "axum",
  "chrono",
  "dotenvy",
  "kodama-api",
+ "rusqlite",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+ "uuid",
+]
+
+[[package]]
+name = "kodama-server"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "dotenvy",
+ "kodama-api",
+ "kodama-internal",
  "rusqlite",
  "serde",
  "serde_json",
