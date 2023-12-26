@@ -20,6 +20,8 @@ pub enum ApiError {
     InvalidTimestamp,
     #[error("record not found")]
     RecordNotFound,
+    #[error("unable to create database path")]
+    UnableToCreateDatabasePath,
 }
 
 impl ApiError {

@@ -138,6 +138,8 @@ pub struct Kodama {
 impl Kodama {
     pub fn instance(path: String) -> Result<Self> {
         let database_path = path.clone();
+        std::fs::create_dir_all(&path).map_err(|_| ApiError::UnableToCreateDatabasePath)?;
+
         let path = PathBuf::from(path).join("kodama.db");
         let db = rusqlite::Connection::open(path)?;
         // enable foreign key constraints

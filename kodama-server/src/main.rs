@@ -20,12 +20,16 @@ fn main() -> Result<()> {
     tracing::debug!("kodama v{}", env!("CARGO_PKG_VERSION"));
 
     let database_path = std::env::var("KODAMA_DATABASE_PATH").expect("KODAMA_DATABASE_PATH");
+    let listen_addr = std::env::var("KODAMA_LISTEN_ADDR")
+        .expect("KODAMA_LISTEN_ADDR")
+        .parse::<SocketAddr>()
+        .expect("KODAMA_LISTEN_ADDR");
 
     tracing::debug!("- initializing database");
     Kodama::instance(database_path.clone())?.initialize()?;
 
     let server_database_path = database_path.clone();
-    start_data_server(server_database_path)?;
+    start_data_server(listen_addr, server_database_path)?;
 
     Ok(())
 }
@@ -56,11 +60,10 @@ fn handle_request(instance: &mut Kodama, buf: &[u8]) -> Result<()> {
     Ok(())
 }
 
-fn start_data_server(database_path: String) -> Result<()> {
-    let addr = SocketAddr::from(([127, 0, 0, 1], 49002));
-    tracing::debug!("- initializing data server ({})", addr);
+fn start_data_server(listen_addr: SocketAddr, database_path: String) -> Result<()> {
+    tracing::debug!("- initializing data server ({})", listen_addr);
 
-    let socket = std::net::UdpSocket::bind(addr)?;
+    let socket = std::net::UdpSocket::bind(listen_addr)?;
     let mut instance = Kodama::instance(database_path)?;
 
     let mut buf = [0; 1024];
