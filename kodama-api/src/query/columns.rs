@@ -95,7 +95,7 @@ impl Columns {
     pub(crate) fn generate(&self, buffer: &mut String) {
         for (i, column) in self.columns.iter().enumerate() {
             if i > 0 {
-                buffer.push_str(",");
+                buffer.push(',');
             }
             column.generate(buffer);
         }

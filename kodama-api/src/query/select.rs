@@ -179,7 +179,7 @@ impl Select {
         if let Some(alias) = &self.from_as {
             buffer.push_str(" as ");
             buffer.push('`');
-            buffer.push_str(&alias);
+            buffer.push_str(alias);
             buffer.push('`');
         }
         if !self.joins.is_empty() {

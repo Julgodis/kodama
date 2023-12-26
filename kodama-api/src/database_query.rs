@@ -4,9 +4,9 @@ use crate::{
 };
 
 pub trait DatabaseQuery {
-    fn select_one<'x, T>(
+    fn select_one<T>(
         &self,
-        connection: &'x impl DatabaseConnection,
+        connection: &impl DatabaseConnection,
         params: impl rusqlite::Params,
     ) -> rusqlite::Result<T>
     where
@@ -19,17 +19,17 @@ pub trait DatabaseQuery {
         }
     }
 
-    fn select_maybe<'x, T>(
+    fn select_maybe<T>(
         &self,
-        connection: &'x impl DatabaseConnection,
+        connection: &impl DatabaseConnection,
         params: impl rusqlite::Params,
     ) -> rusqlite::Result<Option<T>>
     where
         T: FromRow;
 
-    fn select_many<'x, T>(
+    fn select_many<T>(
         &self,
-        connection: &'x impl DatabaseConnection,
+        connection: &impl DatabaseConnection,
         params: impl rusqlite::Params,
     ) -> rusqlite::Result<Vec<T>>
     where
@@ -96,9 +96,9 @@ where
 }
 
 impl DatabaseQuery for Query {
-    fn select_maybe<'x, T>(
+    fn select_maybe<T>(
         &self,
-        connection: &'x impl DatabaseConnection,
+        connection: &impl DatabaseConnection,
         params: impl rusqlite::Params,
     ) -> rusqlite::Result<Option<T>>
     where
@@ -130,9 +130,9 @@ impl DatabaseQuery for Query {
         )
     }
 
-    fn select_many<'x, T>(
+    fn select_many<T>(
         &self,
-        connection: &'x impl DatabaseConnection,
+        connection: &impl DatabaseConnection,
         params: impl rusqlite::Params,
     ) -> rusqlite::Result<Vec<T>>
     where
@@ -146,7 +146,9 @@ impl DatabaseQuery for Query {
                 let mut stmt = connection.xprepare(&query.query)?;
                 let result = {
                     let rows = stmt.query_map(params, |row| T::from_row(row))?;
-                    let result = rows
+                    
+
+                    rows
                         .into_iter()
                         .inspect(|row| {
                             if let Err(err) = row {
@@ -154,9 +156,7 @@ impl DatabaseQuery for Query {
                             }
                         })
                         .filter_map(|x| x.ok())
-                        .collect::<Vec<_>>();
-
-                    result
+                        .collect::<Vec<_>>()
                 };
 
                 if let Some(ext) = stmt.expanded_sql() {
@@ -226,25 +226,25 @@ impl DatabaseQuery for Query {
 }
 
 pub trait DatabaseQueryShortcut {
-    fn select_one<'x, T>(
+    fn select_one<T>(
         self,
-        connection: &'x impl DatabaseConnection,
+        connection: &impl DatabaseConnection,
         params: impl rusqlite::Params,
     ) -> rusqlite::Result<T>
     where
         T: FromRow;
 
-    fn select_maybe<'x, T>(
+    fn select_maybe<T>(
         self,
-        connection: &'x impl DatabaseConnection,
+        connection: &impl DatabaseConnection,
         params: impl rusqlite::Params,
     ) -> rusqlite::Result<Option<T>>
     where
         T: FromRow;
 
-    fn select_many<'x, T>(
+    fn select_many<T>(
         self,
-        connection: &'x impl DatabaseConnection,
+        connection: &impl DatabaseConnection,
         params: impl rusqlite::Params,
     ) -> rusqlite::Result<Vec<T>>
     where
@@ -279,9 +279,9 @@ impl<Q> DatabaseQueryShortcut for Q
 where
     Q: IntoQuery,
 {
-    fn select_one<'x, T>(
+    fn select_one<T>(
         self,
-        connection: &'x impl DatabaseConnection,
+        connection: &impl DatabaseConnection,
         params: impl rusqlite::Params,
     ) -> rusqlite::Result<T>
     where
@@ -291,9 +291,9 @@ where
         DatabaseQuery::select_one(&query, connection, params)
     }
 
-    fn select_maybe<'x, T>(
+    fn select_maybe<T>(
         self,
-        connection: &'x impl DatabaseConnection,
+        connection: &impl DatabaseConnection,
         params: impl rusqlite::Params,
     ) -> rusqlite::Result<Option<T>>
     where
@@ -303,9 +303,9 @@ where
         DatabaseQuery::select_maybe(&query, connection, params)
     }
 
-    fn select_many<'x, T>(
+    fn select_many<T>(
         self,
-        connection: &'x impl DatabaseConnection,
+        connection: &impl DatabaseConnection,
         params: impl rusqlite::Params,
     ) -> rusqlite::Result<Vec<T>>
     where

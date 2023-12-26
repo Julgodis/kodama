@@ -54,7 +54,7 @@ impl Insert {
             buffer.push_str(" (");
             for (i, column) in self.columns.iter().enumerate() {
                 if i > 0 {
-                    buffer.push_str(",");
+                    buffer.push(',');
                 }
                 Column::generate_name(buffer, column);
             }
@@ -67,7 +67,7 @@ impl Insert {
             buffer.push_str("values (");
             for (i, values) in self.values.iter().enumerate() {
                 if i > 0 {
-                    buffer.push_str(",");
+                    buffer.push(',');
                 }
                 values.generate(buffer);
             }

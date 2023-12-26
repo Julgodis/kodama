@@ -48,7 +48,7 @@ impl DatabaseBuilder {
         )?;
 
         let mut db = Database {
-            conn: conn,
+            conn,
             kodama: self
                 .kodama
                 .map(|(name, service, addr)| Client::from_socketaddr(name, service, addr)),
@@ -68,7 +68,7 @@ impl Database {
     fn has_migration(&self, version: &str) -> Result<bool> {
         let result = self.conn.query_row(
             "SELECT EXISTS(SELECT 1 FROM migrations WHERE version = ?1);",
-            &[version],
+            [version],
             |row| row.get(0),
         )?;
         Ok(result)
@@ -77,7 +77,7 @@ impl Database {
     fn apply_migration(&mut self, version: &str, sql: &str) -> Result<()> {
         let tx = self.conn.transaction()?;
         tx.execute_batch(sql)?;
-        tx.execute("INSERT INTO migrations (version) VALUES (?1)", &[version])?;
+        tx.execute("INSERT INTO migrations (version) VALUES (?1)", [version])?;
         tx.commit()?;
         Ok(())
     }

@@ -46,6 +46,6 @@ where
     T: rusqlite::types::FromSql,
 {
     fn from_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<Self> {
-        Ok(row.get(0)?)
+        row.get(0)
     }
 }

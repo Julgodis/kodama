@@ -33,10 +33,10 @@ impl Update {
         buffer.push_str(" set ");
         for (i, (column, value)) in self.set_clauses.iter().enumerate() {
             if i > 0 {
-                buffer.push_str(",");
+                buffer.push(',');
             }
             Column::generate_name(buffer, column);
-            buffer.push_str("=");
+            buffer.push('=');
             value.generate(buffer);
         }
         if !self.where_clauses.is_empty() {

@@ -93,28 +93,28 @@ impl Value {
             Self::Add(a, b) => {
                 buffer.push('(');
                 a.generate(buffer);
-                buffer.push_str("+");
+                buffer.push('+');
                 b.generate(buffer);
                 buffer.push(')');
             }
             Self::Sub(a, b) => {
                 buffer.push('(');
                 a.generate(buffer);
-                buffer.push_str("-");
+                buffer.push('-');
                 b.generate(buffer);
                 buffer.push(')');
             }
             Self::Mul(a, b) => {
                 buffer.push('(');
                 a.generate(buffer);
-                buffer.push_str("*");
+                buffer.push('*');
                 b.generate(buffer);
                 buffer.push(')');
             }
             Self::Div(a, b) => {
                 buffer.push('(');
                 a.generate(buffer);
-                buffer.push_str("/");
+                buffer.push('/');
                 b.generate(buffer);
                 buffer.push(')');
             }
@@ -134,7 +134,7 @@ impl Value {
             }
             Self::Eq(a, b) => {
                 a.generate(buffer);
-                buffer.push_str("=");
+                buffer.push('=');
                 b.generate(buffer);
             }
             Self::Ne(a, b) => {
@@ -149,7 +149,7 @@ impl Value {
             }
             Self::Gt(a, b) => {
                 a.generate(buffer);
-                buffer.push_str(">");
+                buffer.push('>');
                 b.generate(buffer);
             }
             Self::Le(a, b) => {
@@ -159,7 +159,7 @@ impl Value {
             }
             Self::Lt(a, b) => {
                 a.generate(buffer);
-                buffer.push_str("<");
+                buffer.push('<');
                 b.generate(buffer);
             }
             Self::NotIn(a, b) => {

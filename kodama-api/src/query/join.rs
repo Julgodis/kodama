@@ -70,7 +70,7 @@ impl Join {
         if let Some(alias) = &self.alias {
             buffer.push_str(" as ");
             buffer.push('`');
-            buffer.push_str(&alias);
+            buffer.push_str(alias);
             buffer.push('`');
         }
         buffer.push_str(" on ");
