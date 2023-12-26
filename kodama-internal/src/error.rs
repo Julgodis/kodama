@@ -1,27 +1,9 @@
-use axum::{
-    response::{IntoResponse, Response},
-    Json,
-};
-
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
     #[error("rusqlite error")]
     Rusqlite(#[from] rusqlite::Error),
     #[error("api error: {0}")]
     ApiError(#[from] ApiError),
-}
-
-impl IntoResponse for Error {
-    fn into_response(self) -> Response {
-        tracing::error!("{:?}", self);
-
-        match self {
-            Error::ApiError(x) => {
-                (axum::http::StatusCode::BAD_REQUEST, Json(x.json())).into_response()
-            }
-            _ => axum::http::StatusCode::INTERNAL_SERVER_ERROR.into_response(),
-        }
-    }
 }
 
 #[derive(Debug, thiserror::Error)]

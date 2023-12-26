@@ -1,8 +1,8 @@
-use super::{IntoValue, Value, Column};
+use super::{Column, IntoValue, Value};
 
 pub enum JoinKind {
-    Join,
     Left,
+    Inner,
 }
 
 pub struct Join {
@@ -13,31 +13,35 @@ pub struct Join {
 }
 
 impl Join {
-    pub fn left_as(table: &str, alias: &str) -> Self {
+    pub fn left(table: &str) -> Self {
         Self {
             kind: JoinKind::Left,
             table: table.into(),
-            alias: Some(alias.into()),
+            alias: None,
             on: Vec::new(),
         }
     }
 
-    pub fn join(table: &str, alias: &str) -> Self {
+    pub fn left_as(table: &str, alias: &str) -> Self {
+        Self::left(table).alias(alias)
+    }
+
+    pub fn inner(table: &str) -> Self {
         Self {
-            kind: JoinKind::Join,
+            kind: JoinKind::Inner,
             table: table.into(),
-            alias: Some(alias.into()),
+            alias: None,
             on: Vec::new(),
         }
     }
 
-    pub fn inner(table: &str, alias: &str) -> Self {
-        Self {
-            kind: JoinKind::Join,
-            table: table.into(),
-            alias: Some(alias.into()),
-            on: Vec::new(),
-        }
+    pub fn inner_as(table: &str, alias: &str) -> Self {
+        Self::inner(table).alias(alias)
+    }
+
+    pub fn alias(mut self, alias: &str) -> Self {
+        self.alias = Some(alias.into());
+        self
     }
 
     pub fn on(mut self, value: impl IntoValue) -> Self {
@@ -48,21 +52,25 @@ impl Join {
     pub fn on_column(mut self, column: &str, value: impl IntoValue) -> Self {
         let column = Column::Name(column.to_string());
         let value = value.into_value();
-        self.on.push(Value::Eq(Box::new(column.into_value()), Box::new(value)));
+        self.on
+            .push(Value::Eq(Box::new(column.into_value()), Box::new(value)));
         self
     }
 
     pub fn on_match(mut self, column: &str, other: &str) -> Self {
         let column = Column::Name(column.to_string());
         let other = Column::Name(other.to_string());
-        self.on.push(Value::Eq(Box::new(column.into_value()), Box::new(other.into_value())));
+        self.on.push(Value::Eq(
+            Box::new(column.into_value()),
+            Box::new(other.into_value()),
+        ));
         self
     }
 
     pub(crate) fn generate(&self, buffer: &mut String) {
         match self.kind {
-            JoinKind::Join => buffer.push_str("join "),
             JoinKind::Left => buffer.push_str("left join "),
+            JoinKind::Inner => buffer.push_str("inner join "),
         }
         buffer.push('`');
         buffer.push_str(&self.table);

@@ -2,7 +2,7 @@ mod database;
 mod database_connection;
 mod database_query;
 mod from_row;
-mod query;
+pub mod query;
 mod timestamp;
 pub use database::*;
 pub use database_connection::*;

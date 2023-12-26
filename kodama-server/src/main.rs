@@ -1,14 +1,13 @@
 use kodama_api::Command;
 use kodama_internal::Kodama;
-use std::{net::SocketAddr, thread};
+use std::net::SocketAddr;
 
 mod error;
 
 pub type Result<T> = std::result::Result<T, Error>;
 pub use error::Error;
 
-#[tokio::main]
-async fn main() -> Result<()> {
+fn main() -> Result<()> {
     dotenvy::dotenv().expect("unable to load .env file");
 
     tracing_subscriber::fmt::fmt()
@@ -26,12 +25,7 @@ async fn main() -> Result<()> {
     Kodama::instance(database_path.clone())?.initialize()?;
 
     let server_database_path = database_path.clone();
-    thread::spawn(move || match start_data_server(server_database_path) {
-        Ok(_) => {}
-        Err(err) => {
-            tracing::error!("error: {:?}", err);
-        }
-    });
+    start_data_server(server_database_path)?;
 
     Ok(())
 }

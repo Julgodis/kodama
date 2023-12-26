@@ -78,8 +78,7 @@ enum RecordSubCommand {
     },
 }
 
-#[tokio::main]
-async fn main() {
+fn main() {
     tracing_subscriber::fmt::fmt()
         .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
         .with_target(true)
@@ -97,14 +96,14 @@ async fn main() {
     let instance = Kodama::instance(database_path.clone()).expect("kodama instance");
 
     match args.subcommand {
-        SubCommand::Project { subcommand } => project(instance, subcommand).await,
-        SubCommand::Service { subcommand } => service(instance, subcommand).await,
-        SubCommand::Metric { subcommand } => matric(instance, subcommand).await,
-        SubCommand::Record { subcommand } => record(instance, subcommand).await,
+        SubCommand::Project { subcommand } => project(instance, subcommand),
+        SubCommand::Service { subcommand } => service(instance, subcommand),
+        SubCommand::Metric { subcommand } => matric(instance, subcommand),
+        SubCommand::Record { subcommand } => record(instance, subcommand),
     }
 }
 
-async fn project(kodama: Kodama, subcommand: ProjectSubCommand) {
+fn project(kodama: Kodama, subcommand: ProjectSubCommand) {
     match subcommand {
         ProjectSubCommand::Create { name, description } => {
             tracing::debug!("creating project: {:?}", name);
@@ -126,7 +125,7 @@ async fn project(kodama: Kodama, subcommand: ProjectSubCommand) {
     }
 }
 
-async fn service(kodama: Kodama, subcommand: ServiceSubCommand) {
+fn service(kodama: Kodama, subcommand: ServiceSubCommand) {
     match subcommand {
         ServiceSubCommand::Create {
             project,
@@ -152,7 +151,7 @@ async fn service(kodama: Kodama, subcommand: ServiceSubCommand) {
     }
 }
 
-async fn matric(_kodama: Kodama, subcommand: MetricSubCommand) {
+fn matric(_kodama: Kodama, subcommand: MetricSubCommand) {
     match subcommand {
         MetricSubCommand::Push {
             project,
@@ -173,7 +172,7 @@ async fn matric(_kodama: Kodama, subcommand: MetricSubCommand) {
     }
 }
 
-async fn record(mut kodama: Kodama, subcommand: RecordSubCommand) {
+fn record(mut kodama: Kodama, subcommand: RecordSubCommand) {
     match subcommand {
         RecordSubCommand::List { project, service } => {
             let records = kodama.record_list(&project, &service).expect("record list");
