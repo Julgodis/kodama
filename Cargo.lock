@@ -274,7 +274,7 @@ dependencies = [
 
 [[package]]
 name = "kodama-api"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "chrono",
  "rusqlite",
@@ -285,7 +285,7 @@ dependencies = [
 
 [[package]]
 name = "kodama-cli"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "clap",
  "kodama-api",
@@ -296,7 +296,7 @@ dependencies = [
 
 [[package]]
 name = "kodama-internal"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "chrono",
  "kodama-api",
@@ -308,7 +308,7 @@ dependencies = [
 
 [[package]]
 name = "kodama-server"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "dotenvy",
  "kodama-api",
