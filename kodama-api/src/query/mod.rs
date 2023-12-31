@@ -97,6 +97,10 @@ pub fn now() -> Value {
     Value::Now
 }
 
+pub fn raw_sql(value: &str) -> Value {
+    Value::RawSql(value.into())
+}
+
 pub fn bool_to_integer(value: impl IntoValue) -> Value {
     Value::BoolToInteger(Box::new(value.into_value()))
 }

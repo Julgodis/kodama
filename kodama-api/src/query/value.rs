@@ -33,6 +33,7 @@ pub enum Value {
     BoolToInteger(Box<Value>),
     Random,
     Now,
+    RawSql(String),
 }
 
 impl Value {
@@ -195,6 +196,9 @@ impl Value {
             }
             Self::Now => {
                 buffer.push_str("datetime('now')");
+            }
+            Self::RawSql(sql) => {
+                buffer.push_str(sql);
             }
         }
     }
