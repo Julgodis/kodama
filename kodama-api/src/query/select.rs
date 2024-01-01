@@ -12,9 +12,9 @@ impl SelectBeforeFrom {
             from_as: None,
             where_clauses: Vec::new(),
             joins: Vec::new(),
-            order_by: None,
-            order_by_asc: true,
+            order_by: Vec::new(),
             limit: None,
+            offset: None,
             with: Vec::new(),
         }
     }
@@ -26,12 +26,17 @@ impl SelectBeforeFrom {
             from_as: Some(alias.into()),
             where_clauses: Vec::new(),
             joins: Vec::new(),
-            order_by: None,
-            order_by_asc: true,
+            order_by: Vec::new(),
             limit: None,
+            offset: None,
             with: Vec::new(),
         }
     }
+}
+
+pub enum OrderBy {
+    Asc(Value),
+    Desc(Value),
 }
 
 pub struct Select {
@@ -40,9 +45,9 @@ pub struct Select {
     from_as: Option<String>,
     where_clauses: Vec<Value>,
     joins: Vec<Join>,
-    order_by: Option<Value>,
-    order_by_asc: bool,
-    limit: Option<i64>,
+    order_by: Vec<OrderBy>,
+    limit: Option<Value>,
+    offset: Option<Value>,
     with: Vec<(String, Query)>,
 }
 
@@ -68,9 +73,9 @@ impl Select {
             from_as: None,
             where_clauses: Vec::new(),
             joins: Vec::new(),
-            order_by: None,
-            order_by_asc: true,
+            order_by: Vec::new(),
             limit: None,
+            offset: None,
             with: Vec::new(),
         }
     }
@@ -82,9 +87,9 @@ impl Select {
             from_as: Some(alias.into()),
             where_clauses: Vec::new(),
             joins: Vec::new(),
-            order_by: None,
-            order_by_asc: true,
+            order_by: Vec::new(),
             limit: None,
+            offset: None,
             with: Vec::new(),
         }
     }
@@ -131,25 +136,26 @@ impl Select {
     }
 
     pub fn order_by_asc(mut self, value: impl IntoValue) -> Self {
-        self.order_by = Some(value.into_value());
-        self.order_by_asc = true;
+        self.order_by.push(OrderBy::Asc(value.into_value()));
         self
     }
 
     pub fn order_by_desc(mut self, value: impl IntoValue) -> Self {
-        self.order_by = Some(value.into_value());
-        self.order_by_asc = false;
+        self.order_by.push(OrderBy::Desc(value.into_value()));
         self
     }
 
-    pub fn order_by_random(mut self) -> Self {
-        self.order_by = Some(Value::Random);
-        self.order_by_asc = true;
+    pub fn order_by_random(self) -> Self {
+        self.order_by_asc(Value::Random)
+    }
+
+    pub fn limit(mut self, limit: impl IntoValue) -> Self {
+        self.limit = Some(limit.into_value());
         self
     }
 
-    pub fn limit(mut self, limit: i64) -> Self {
-        self.limit = Some(limit);
+    pub fn offset(mut self, offset: impl IntoValue) -> Self {
+        self.offset = Some(offset.into_value());
         self
     }
 
@@ -198,19 +204,28 @@ impl Select {
             }
         }
 
-        if let Some(order_by) = &self.order_by {
+        for order_by in &self.order_by {
             buffer.push_str(" order by ");
-            order_by.generate(buffer);
-            if self.order_by_asc {
-                buffer.push_str(" asc");
-            } else {
-                buffer.push_str(" desc");
+            match order_by {
+                OrderBy::Asc(value) => {
+                    value.generate(buffer);
+                    buffer.push_str(" asc");
+                }
+                OrderBy::Desc(value) => {
+                    value.generate(buffer);
+                    buffer.push_str(" desc");
+                }
             }
         }
 
-        if let Some(limit) = self.limit {
+        if let Some(limit) = &self.limit {
             buffer.push_str(" limit ");
-            buffer.push_str(&limit.to_string());
+            limit.generate(buffer);
+        }
+
+        if let Some(offset) = &self.offset {
+            buffer.push_str(" offset ");
+            offset.generate(buffer);
         }
     }
 }
